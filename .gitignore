@@ -11,21 +11,28 @@
 .env.production.local
 
 # logs
+logs
+*.log
 npm-debug.log*
 yarn-debug.log*
 yarn-error.log*
-/logs
+
+# runtime data
+pids
+*.pid
+*.seed
+*.pid.lock
+
+# directory for uploaded files
+/uploads/*
+!/uploads/.gitkeep
 
 # misc
 .DS_Store
-.idea/
-.vscode/
+.idea
+.vscode
 *.suo
 *.ntvs*
 *.njsproj
 *.sln
-*.sw?
-
-# uploads
-/uploads/*
-!uploads/.gitkeep 
+*.sw? 
