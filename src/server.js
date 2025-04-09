@@ -28,7 +28,7 @@ app.use(securityMiddleware);
 
 // CORS configuration
 app.use(cors({
-  origin: ['http://localhost:3001', 'http://127.0.0.1:3001', 'http://172.20.10.3:3000', 'http://10.0.2.2:3000', '*'],
+  origin: ['http://localhost:3001', 'http://127.0.0.1:3001', 'https://admin-7yyl.vercel.app', 'http://172.20.10.3:3000', 'http://10.0.2.2:3000'],
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
   allowedHeaders: ['Content-Type', 'Authorization'],
   credentials: true
