@@ -1,7 +1,8 @@
 // Add at the very beginning of the file
 console.log('\n\n');
 console.log('='.repeat(80));
-console.log('🔄🔄🔄 SERVER RESTARTING - ' + new Date().toISOString() + ' 🔄🔄🔄');
+console.log('🔄🔄🔄 SERVER STARTING - ' + new Date().toISOString() + ' 🔄🔄🔄');
+console.log('Environment:', process.env.NODE_ENV || 'development');
 console.log('='.repeat(80));
 console.log('\n\n');
 
@@ -69,9 +70,19 @@ console.log('🌐 DEBUG: Main API routes registered at: /api');
 app.use(errorHandler);
 
 // Connect to MongoDB
+console.log('🔌 DEBUG: Connecting to MongoDB: ' + (process.env.MONGODB_URI || '').substring(0, 20) + '...');
+
 mongoose.connect(process.env.MONGODB_URI)
   .then(() => logger.info('Connected to MongoDB'))
-  .catch(err => logger.error('MongoDB connection error:', err));
+  .catch(err => {
+    logger.error('MongoDB connection error:', err);
+    console.error('❌ CRITICAL: Failed to connect to MongoDB:', err.message);
+    // In production, we may want to exit and let the process manager restart the app
+    if (process.env.NODE_ENV === 'production') {
+      console.error('❌ Exiting due to MongoDB connection failure');
+      process.exit(1);
+    }
+  });
 
 const PORT = process.env.PORT || 3000;
 // Listen on all network interfaces (0.0.0.0) instead of just localhost
