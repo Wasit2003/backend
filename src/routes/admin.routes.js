@@ -177,7 +177,10 @@ router.post('/assign-public-address', async (req, res) => {
 
 // Modify the settings routes with debug logs
 router.get('/settings', async (req, res) => {
-  console.log('⚙️ DEBUG: GET /api/admin/settings endpoint hit');
+  console.log('⚙️ DEBUG: GET /admin/settings endpoint hit with following details:');
+  console.log('⚙️ DEBUG: Headers:', req.headers);
+  console.log('⚙️ DEBUG: URL:', req.originalUrl);
+  
   try {
     const Settings = require('../models/settings.model');
     console.log('⚙️ DEBUG: Settings model loaded');
@@ -187,8 +190,13 @@ router.get('/settings', async (req, res) => {
     
     res.status(200).json({
       success: true,
-      settings
+      settings: {
+        networkFeePercentage: settings.networkFeePercentage || 1.0,
+        exchangeRate: settings.exchangeRate || 1.0,
+        updatedAt: settings.updatedAt
+      }
     });
+    console.log('⚙️ DEBUG: Settings response sent successfully');
   } catch (error) {
     console.error('❌ DEBUG: Error fetching admin settings:', error);
     res.status(500).json({
@@ -200,7 +208,9 @@ router.get('/settings', async (req, res) => {
 });
 
 router.put('/settings', async (req, res) => {
-  console.log('⚙️ DEBUG: PUT /api/admin/settings endpoint hit with body:', req.body);
+  console.log('⚙️ DEBUG: PUT /admin/settings endpoint hit with body:', req.body);
+  console.log('⚙️ DEBUG: Headers:', req.headers);
+  
   try {
     const { networkFeePercentage, exchangeRate } = req.body;
     const Settings = require('../models/settings.model');
@@ -247,10 +257,14 @@ router.put('/settings', async (req, res) => {
     
     res.status(200).json({
       success: true,
-      settings
+      settings: {
+        networkFeePercentage: settings.networkFeePercentage,
+        exchangeRate: settings.exchangeRate,
+        updatedAt: settings.updatedAt
+      }
     });
   } catch (error) {
-    console.error('❌ DEBUG: Error updating admin settings:', error);
+    console.error('❌ DEBUG: Error updating settings:', error);
     res.status(500).json({
       success: false,
       message: 'Failed to update settings',
