@@ -58,38 +58,38 @@ app.use('/api/auth/refresh-token', tokenVerificationLimiter);
 // Add before registering routes
 console.log('🚀 DEBUG: Registering API routes...');
 
-// Special direct route for settings that's causing issues
-app.get('/api/admin/settings', async (req, res) => {
-  console.log('⚠️ DIRECT HANDLER: /api/admin/settings hit');
-  try {
-    const Settings = require('./models/settings.model');
-    console.log('⚙️ DEBUG: Settings model loaded in direct handler');
-    
-    // Add CORS headers to ensure this works from any origin
-    res.header('Access-Control-Allow-Origin', '*');
-    res.header('Access-Control-Allow-Headers', 'Origin, X-Requested-With, Content-Type, Accept, Authorization');
-    
-    const settings = await Settings.getSettings();
-    console.log('⚙️ DEBUG: Settings fetched in direct handler:', settings);
-    
-    res.status(200).json({
-      success: true,
-      settings: {
-        networkFeePercentage: settings.networkFeePercentage || 1.0,
-        exchangeRate: settings.exchangeRate || 1.0,
-        updatedAt: settings.updatedAt
-      },
-      directHandler: true
-    });
-  } catch (error) {
-    console.error('❌ ERROR in direct handler:', error);
-    res.status(500).json({
-      success: false,
-      message: 'Failed to fetch settings in direct handler',
-      error: error.message
-    });
-  }
-});
+// Special direct route for settings that's causing issues - REMOVED
+// app.get('/api/admin/settings', async (req, res) => {
+//   console.log('⚠️ DIRECT HANDLER: /api/admin/settings hit');
+//   try {
+//     const Settings = require('./models/settings.model');
+//     console.log('⚙️ DEBUG: Settings model loaded in direct handler');
+//     
+//     // Add CORS headers to ensure this works from any origin
+//     res.header('Access-Control-Allow-Origin', '*');
+//     res.header('Access-Control-Allow-Headers', 'Origin, X-Requested-With, Content-Type, Accept, Authorization');
+//     
+//     const settings = await Settings.getSettings();
+//     console.log('⚙️ DEBUG: Settings fetched in direct handler:', settings);
+//     
+//     res.status(200).json({
+//       success: true,
+//       settings: {
+//         networkFeePercentage: settings.networkFeePercentage || 1.0,
+//         exchangeRate: settings.exchangeRate || 1.0,
+//         updatedAt: settings.updatedAt
+//       },
+//       directHandler: true
+//     });
+//   } catch (error) {
+//     console.error('❌ ERROR in direct handler:', error);
+//     res.status(500).json({
+//       success: false,
+//       message: 'Failed to fetch settings in direct handler',
+//       error: error.message
+//     });
+//   }
+// });
 
 // General routes
 app.use('/api', router);
