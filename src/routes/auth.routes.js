@@ -24,7 +24,6 @@ router.post(
 router.post(
   '/request-verification',
   sanitizeInput,
-  verificationLimiter,
   phoneNumberValidation,
   authController.requestVerification
 );
