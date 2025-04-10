@@ -180,6 +180,10 @@ router.post('/assign-public-address', async (req, res) => {
 // Special debug route to test connectivity
 router.get('/debug-settings', async (req, res) => {
   console.log('🛠️ DEBUG: /admin/debug-settings endpoint hit');
+  // Add CORS headers to ensure this works from any origin
+  res.header('Access-Control-Allow-Origin', '*');
+  res.header('Access-Control-Allow-Headers', 'Origin, X-Requested-With, Content-Type, Accept, Authorization');
+  
   try {
     const Settings = require('../models/settings.model');
     
@@ -236,51 +240,16 @@ router.get('/settings', async (req, res) => {
   console.log('⚙️ DEBUG: Headers:', req.headers);
   console.log('⚙️ DEBUG: Auth:', req.user ? `User ${req.user._id} authenticated` : 'No authentication');
   
+  // Add CORS headers to ensure this works from any origin
+  res.header('Access-Control-Allow-Origin', '*');
+  res.header('Access-Control-Allow-Headers', 'Origin, X-Requested-With, Content-Type, Accept, Authorization');
+  
   try {
-    // Import models safely
-    const mongoose = require('mongoose');
-    
-    // Check MongoDB connection
-    const dbState = mongoose.connection.readyState;
-    console.log('⚙️ DEBUG: MongoDB connection state:', dbState);
-    if (dbState !== 1) {
-      console.error('❌ DEBUG: MongoDB not connected. State:', dbState);
-      return res.status(500).json({
-        success: false,
-        message: 'Database connection not available',
-        debug: { dbState }
-      });
-    }
-    
     const Settings = require('../models/settings.model');
     console.log('⚙️ DEBUG: Settings model loaded');
     
-    // Try to find existing settings or create default ones
-    let settings;
-    try {
-      console.log('⚙️ DEBUG: Attempting to get settings');
-      settings = await Settings.getSettings();
-      console.log('⚙️ DEBUG: Settings fetched:', settings);
-    } catch (settingsError) {
-      console.error('❌ DEBUG: Error getting settings, creating default:', settingsError);
-      // If getSettings fails, create a new settings object manually
-      try {
-        settings = new Settings({
-          networkFeePercentage: 1.0,
-          exchangeRate: 1.0,
-          updatedAt: new Date()
-        });
-        await settings.save();
-        console.log('⚙️ DEBUG: Created default settings:', settings);
-      } catch (createError) {
-        console.error('❌ DEBUG: Failed to create default settings:', createError);
-        return res.status(500).json({
-          success: false,
-          message: 'Failed to initialize settings',
-          error: createError.message
-        });
-      }
-    }
+    const settings = await Settings.getSettings();
+    console.log('⚙️ DEBUG: Settings fetched:', settings);
     
     // Enhance the response with more debugging information
     const response = {
@@ -288,7 +257,7 @@ router.get('/settings', async (req, res) => {
       settings: {
         networkFeePercentage: settings.networkFeePercentage || 1.0,
         exchangeRate: settings.exchangeRate || 1.0,
-        updatedAt: settings.updatedAt || new Date()
+        updatedAt: settings.updatedAt
       },
       debug: {
         timestamp: new Date().toISOString(),
@@ -302,7 +271,6 @@ router.get('/settings', async (req, res) => {
     console.error('❌ DEBUG: Error fetching settings:', error);
     console.error('❌ DEBUG: Error stack:', error.stack);
     
-    // Send a graceful error response
     res.status(500).json({
       success: false,
       message: 'Failed to fetch settings',
