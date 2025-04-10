@@ -29,14 +29,7 @@ app.use(securityMiddleware);
 
 // CORS configuration
 app.use(cors({
-  origin: [
-    'http://localhost:3001', 
-    'http://127.0.0.1:3001', 
-    'https://admin-7yyl.vercel.app',
-    'https://admin.7yyl.vercel.app',
-    'http://172.20.10.3:3000', 
-    'http://10.0.2.2:3000'
-  ],
+  origin: ['http://localhost:3001', 'http://127.0.0.1:3001', 'https://admin-7yyl.vercel.app', 'http://172.20.10.3:3000', 'http://10.0.2.2:3000'],
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
   allowedHeaders: ['Content-Type', 'Authorization'],
   credentials: true
@@ -70,8 +63,28 @@ app.use('/api', router);
 app.use('/admin', adminRoutes);
 app.use('/api/admin', adminRoutes);
 
-console.log('🔑 DEBUG: Admin routes registered at: /api/admin');
-console.log('🌐 DEBUG: Main API routes registered at: /api');
+// Print registered route patterns
+console.log('🔑 DEBUG: Admin routes registered at:');
+console.log('  - /admin/*');
+console.log('  - /api/admin/*');
+console.log('🌐 DEBUG: Main API routes registered at: /api/*');
+
+// Route debugging - log all incoming requests
+app.use((req, res, next) => {
+  const timestamp = new Date().toISOString();
+  console.log(`[${timestamp}] 🔍 ${req.method} ${req.originalUrl}`);
+  next();
+});
+
+// Add catch-all for unmatched routes
+app.use('*', (req, res) => {
+  console.log(`❌ 404: Route not found: ${req.originalUrl}`);
+  res.status(404).json({
+    success: false,
+    message: 'Route not found',
+    path: req.originalUrl
+  });
+});
 
 // Error handling
 app.use(errorHandler);

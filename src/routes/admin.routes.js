@@ -175,11 +175,11 @@ router.post('/assign-public-address', async (req, res) => {
   }
 });
 
-// Modify the settings routes with debug logs
+// Modify the settings routes with better debug logs
 router.get('/settings', async (req, res) => {
-  console.log('⚙️ DEBUG: GET /admin/settings endpoint hit with following details:');
+  console.log('⚙️ DEBUG: GET /admin/settings or /api/admin/settings endpoint hit');
+  console.log('⚙️ DEBUG: Full URL:', req.originalUrl);
   console.log('⚙️ DEBUG: Headers:', req.headers);
-  console.log('⚙️ DEBUG: URL:', req.originalUrl);
   
   try {
     const Settings = require('../models/settings.model');
@@ -208,7 +208,9 @@ router.get('/settings', async (req, res) => {
 });
 
 router.put('/settings', async (req, res) => {
-  console.log('⚙️ DEBUG: PUT /admin/settings endpoint hit with body:', req.body);
+  console.log('⚙️ DEBUG: PUT /admin/settings or /api/admin/settings endpoint hit');
+  console.log('⚙️ DEBUG: Full URL:', req.originalUrl);
+  console.log('⚙️ DEBUG: Body:', req.body);
   console.log('⚙️ DEBUG: Headers:', req.headers);
   
   try {
