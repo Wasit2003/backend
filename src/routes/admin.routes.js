@@ -6,8 +6,10 @@ const publicAddressController = require('../controllers/public-address.controlle
 const { User } = require('../models/user.model');
 const { PublicAddress } = require('../models/public-address.model');
 const { Transaction } = require('../models/transaction.model');
+const mongoose = require('mongoose');
 
 console.log('🔧 DEBUG: Loading admin routes module...');
+console.log('🧩 Loading admin.routes.js module');
 
 // Auth routes (public)
 router.post('/login', adminController.login);
@@ -175,11 +177,64 @@ router.post('/assign-public-address', async (req, res) => {
   }
 });
 
+// Special debug route to test connectivity
+router.get('/debug-settings', async (req, res) => {
+  console.log('🛠️ DEBUG: /admin/debug-settings endpoint hit');
+  try {
+    const Settings = require('../models/settings.model');
+    
+    // Get MongoDB connection status
+    const dbStatus = mongoose.connection.readyState === 1 ? 'connected' : 'disconnected';
+    
+    // Attempt to get settings but handle potential errors
+    let settings = null;
+    let settingsError = null;
+    try {
+      settings = await Settings.getSettings();
+    } catch (error) {
+      settingsError = error.message;
+    }
+    
+    // Get info about the current environment
+    const envInfo = {
+      nodeEnv: process.env.NODE_ENV || 'development',
+      mongoDbUri: process.env.MONGODB_URI ? '***[PRESENT]***' : '***[MISSING]***',
+      redisUrl: process.env.REDIS_URL ? '***[PRESENT]***' : '***[MISSING]***',
+    };
+    
+    // Return comprehensive debug information
+    res.status(200).json({
+      success: true,
+      timestamp: new Date().toISOString(),
+      request: {
+        url: req.originalUrl,
+        method: req.method,
+        headers: req.headers,
+      },
+      environment: envInfo,
+      database: {
+        status: dbStatus,
+        settings: settings,
+        settingsError: settingsError,
+      }
+    });
+  } catch (error) {
+    console.error('❌ ERROR in debug-settings:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Debug endpoint error',
+      error: error.message,
+      stack: process.env.NODE_ENV === 'production' ? null : error.stack,
+    });
+  }
+});
+
 // Modify the settings routes with better debug logs
 router.get('/settings', async (req, res) => {
-  console.log('⚙️ DEBUG: GET /admin/settings or /api/admin/settings endpoint hit');
+  console.log('⚙️ DEBUG: GET /settings endpoint hit');
   console.log('⚙️ DEBUG: Full URL:', req.originalUrl);
   console.log('⚙️ DEBUG: Headers:', req.headers);
+  console.log('⚙️ DEBUG: Auth:', req.user ? `User ${req.user._id} authenticated` : 'No authentication');
   
   try {
     const Settings = require('../models/settings.model');
@@ -188,21 +243,35 @@ router.get('/settings', async (req, res) => {
     const settings = await Settings.getSettings();
     console.log('⚙️ DEBUG: Settings fetched:', settings);
     
-    res.status(200).json({
+    // Enhance the response with more debugging information
+    const response = {
       success: true,
       settings: {
         networkFeePercentage: settings.networkFeePercentage || 1.0,
         exchangeRate: settings.exchangeRate || 1.0,
         updatedAt: settings.updatedAt
+      },
+      debug: {
+        timestamp: new Date().toISOString(),
+        environment: process.env.NODE_ENV || 'development'
       }
-    });
-    console.log('⚙️ DEBUG: Settings response sent successfully');
+    };
+    
+    console.log('⚙️ DEBUG: Sending settings response:', response);
+    res.status(200).json(response);
   } catch (error) {
-    console.error('❌ DEBUG: Error fetching admin settings:', error);
+    console.error('❌ DEBUG: Error fetching settings:', error);
+    console.error('❌ DEBUG: Error stack:', error.stack);
+    
     res.status(500).json({
       success: false,
       message: 'Failed to fetch settings',
-      error: error.message
+      error: error.message,
+      debug: {
+        timestamp: new Date().toISOString(),
+        errorType: error.name,
+        stack: process.env.NODE_ENV === 'production' ? null : error.stack
+      }
     });
   }
 });
