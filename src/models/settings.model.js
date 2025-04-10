@@ -1,5 +1,7 @@
 const mongoose = require('mongoose');
 
+console.log('💾 DEBUG: Loading settings model');
+
 const settingsSchema = new mongoose.Schema({
   networkFeePercentage: {
     type: Number,
@@ -26,22 +28,54 @@ const settingsSchema = new mongoose.Schema({
 
 // There should only be one settings document
 settingsSchema.statics.getSettings = async function() {
-  const settings = await this.findOne();
-  if (settings) {
-    return settings;
-  } 
-  
-  // If no settings exist, create default settings
-  return this.create({
-    networkFeePercentage: 1.0,
-    exchangeRate: 1.0
-  });
+  try {
+    console.log('💾 Attempting to find existing settings');
+    const settings = await this.findOne();
+    
+    if (settings) {
+      console.log('💾 Found existing settings document');
+      return settings;
+    }
+    
+    // If no settings exist, create default settings
+    console.log('💾 No settings found, creating default settings');
+    const defaultSettings = await this.create({
+      networkFeePercentage: 1.0,
+      exchangeRate: 1.0,
+      updatedAt: new Date()
+    });
+    
+    console.log('💾 Default settings created:', defaultSettings);
+    return defaultSettings;
+  } catch (error) {
+    console.error('💾 Error in getSettings method:', error);
+    console.error('💾 Stack trace:', error.stack);
+    
+    // Provide richer error information
+    const enhancedError = new Error(`Failed to get or create settings: ${error.message}`);
+    enhancedError.originalError = error;
+    enhancedError.code = 'SETTINGS_ERROR';
+    throw enhancedError;
+  }
 };
 
 // Update timestamp on save
 settingsSchema.pre('save', function(next) {
+  console.log('💾 Updating settings timestamp before save');
   this.updatedAt = Date.now();
   next();
 });
 
-module.exports = mongoose.model('Settings', settingsSchema); 
+// Safety mechanism to handle potential model registration issues
+let Settings;
+try {
+  // Try to get the model if it's already registered
+  Settings = mongoose.model('Settings');
+  console.log('💾 Settings model retrieved from registry');
+} catch (error) {
+  // If not registered, create the model
+  Settings = mongoose.model('Settings', settingsSchema);
+  console.log('💾 Settings model created and registered');
+}
+
+module.exports = Settings; 

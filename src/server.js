@@ -21,6 +21,9 @@ const adminRoutes = require('./routes/admin.routes');
 
 const app = express();
 
+// Configure express to trust proxies (required for Render and other PaaS providers)
+app.set('trust proxy', 1);
+
 // Add near the beginning of the file after imports
 console.log('🚀 DEBUG: Starting server...');
 
@@ -28,12 +31,39 @@ console.log('🚀 DEBUG: Starting server...');
 app.use(securityMiddleware);
 
 // CORS configuration
-app.use(cors({
-  origin: ['http://localhost:3001', 'http://127.0.0.1:3001', 'https://admin-7yyl.vercel.app', 'https://admin-seven-psi.vercel.app', '*vercel.app', 'http://172.20.10.3:3000', 'http://10.0.2.2:3000'],
-  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
-  allowedHeaders: ['Content-Type', 'Authorization'],
-  credentials: true
-}));
+const corsOptions = {
+  origin: function (origin, callback) {
+    // Allow requests with no origin (like mobile apps, curl, Postman)
+    if (!origin) {
+      console.log('🌐 CORS: Allowing request with no origin');
+      return callback(null, true);
+    }
+    
+    // List of allowed origins
+    const allowedOrigins = [
+      'http://localhost:3001',
+      'http://127.0.0.1:3001',
+      'https://admin-7yyl.vercel.app',
+      'https://admin-seven-psi.vercel.app'
+    ];
+    
+    // Check if the origin is allowed
+    if (allowedOrigins.indexOf(origin) !== -1 || origin.endsWith('.vercel.app')) {
+      console.log(`🌐 CORS: Allowing request from ${origin}`);
+      return callback(null, true);
+    }
+    
+    // Log denied origins
+    console.log(`🌐 CORS: Denying request from ${origin}`);
+    callback(new Error(`CORS: Origin ${origin} not allowed`));
+  },
+  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS', 'PATCH'],
+  allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With', 'Accept'],
+  credentials: true,
+  maxAge: 86400 // 24 hours
+};
+
+app.use(cors(corsOptions));
 
 // Basic middleware
 app.use(express.json({ limit: '10mb' }));
@@ -62,6 +92,19 @@ console.log('🚀 DEBUG: Registering API routes...');
 app.use('/api', router);
 app.use('/admin', adminRoutes);
 app.use('/api/admin', adminRoutes);
+
+// Add a root route handler
+app.get('/', (req, res) => {
+  console.log('📝 Root path requested');
+  res.status(200).json({
+    success: true,
+    message: 'Wasit Backend API is running',
+    version: '1.0.0',
+    status: 'healthy',
+    timestamp: new Date().toISOString(),
+    documentation: 'Use /api endpoints to access API resources'
+  });
+});
 
 // Print registered route patterns
 console.log('🔑 DEBUG: Admin routes registered at:');

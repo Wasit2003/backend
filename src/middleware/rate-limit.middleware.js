@@ -1,70 +1,71 @@
 const rateLimit = require('express-rate-limit');
 
-// Rate limiter for verification requests
-const verificationLimiter = rateLimit({
-  windowMs: 60 * 60 * 1000, // 1 hour window
-  max: 5, // limit each IP to 5 verification requests per window
-  message: {
-    success: false,
-    message: 'Too many verification attempts. Please try again later.'
+// Common options for all rate limiters
+const commonOptions = {
+  // Use the client's IP address from the X-Forwarded-For header
+  // when running behind a proxy (like Render)
+  trustProxy: true,
+  // Customize the key generation to handle proxy environments
+  keyGenerator: (req) => {
+    // Use X-Forwarded-For header if available (proxy environments like Render)
+    const xForwardedFor = req.headers['x-forwarded-for'];
+    const realIp = req.headers['x-real-ip'];
+    
+    // Log the IP detection for debugging
+    console.log('🔍 Rate limit IP detection:', {
+      ip: req.ip,
+      xForwardedFor: xForwardedFor || 'not set',
+      realIp: realIp || 'not set'
+    });
+    
+    // Use the most specific identifier available
+    return xForwardedFor || realIp || req.ip;
+  },
+  // Log when rate limit is hit
+  standardHeaders: true,
+  legacyHeaders: false,
+  handler: (req, res, next, options) => {
+    console.log(`⚠️ Rate limit exceeded for ${req.ip} on ${req.originalUrl}`);
+    res.status(options.statusCode).json({
+      success: false,
+      message: options.message || 'Too many requests, please try again later.'
+    });
   }
-});
+};
 
-// General API rate limiter
+// General API rate limiter - more permissive
 const apiLimiter = rateLimit({
+  ...commonOptions,
   windowMs: 15 * 60 * 1000, // 15 minutes
-  max: 200, // increased from 100 to 200 requests per window
-  message: {
-    success: false,
-    message: 'Too many requests, please try again later.'
-  },
-  standardHeaders: true, // Return rate limit info in the `RateLimit-*` headers
-  legacyHeaders: false, // Disable the `X-RateLimit-*` headers
+  max: 200, // 200 requests per windowMs
+  message: 'Too many requests from this IP, please try again after 15 minutes'
 });
 
-// Admin API rate limiter - more permissive
+// Admin rate limiter - more permissive for admin operations
 const adminLimiter = rateLimit({
-  windowMs: 15 * 60 * 1000, // 15 minutes
-  max: 500, // higher limit for admin routes
-  message: {
-    success: false,
-    message: 'Too many admin requests, please try again later.'
-  },
-  standardHeaders: true,
-  legacyHeaders: false,
+  ...commonOptions,
+  windowMs: 5 * 60 * 1000, // 5 minutes
+  max: 100, // 100 requests per windowMs
+  message: 'Too many admin requests from this IP, please try again after 5 minutes'
 });
 
-// Token verification limiter - very permissive for transaction flows
-const tokenVerificationLimiter = rateLimit({
-  windowMs: 1 * 60 * 1000, // 1 minute window
-  max: 200, // Increased to 200 requests per minute
-  message: {
-    success: false,
-    message: 'Too many token verification requests, please try again in a minute.'
-  },
-  standardHeaders: true,
-  legacyHeaders: false,
-  skipSuccessfulRequests: true,
-  keyGenerator: (req) => req.ip + '_' + req.user?.id
-});
-
-// Payment-related endpoints need higher limits to handle retries from mobile app
+// More restrictive rate limiter for payment-related endpoints
 const paymentLimiter = rateLimit({
-  windowMs: 1 * 60 * 1000, // 1 minute window
-  max: 150, // Increased to 150 requests per minute
-  message: {
-    success: false,
-    message: 'Too many payment requests, please try again in a minute.'
-  },
-  standardHeaders: true,
-  legacyHeaders: false,
-  // Add sliding window for better burst handling
-  skipSuccessfulRequests: true, // Don't count successful requests against the limit
-  keyGenerator: (req) => req.ip + '_' + req.user?.id // Separate limits per user
+  ...commonOptions,
+  windowMs: 60 * 60 * 1000, // 1 hour
+  max: 10, // 10 requests per windowMs
+  message: 'Too many payment requests from this IP, please try again after an hour'
+});
+
+// Token verification rate limiter
+const tokenVerificationLimiter = rateLimit({
+  ...commonOptions,
+  windowMs: 15 * 60 * 1000, // 15 minutes
+  max: 50, // 50 requests per windowMs
+  message: 'Too many token verification requests from this IP, please try again after 15 minutes'
 });
 
 module.exports = {
-  verificationLimiter,
   apiLimiter,
   adminLimiter,
   paymentLimiter,
