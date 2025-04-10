@@ -36,6 +36,14 @@ router.post(
   authController.verifyCode
 );
 
+// User registration endpoint
+router.post(
+  '/register',
+  sanitizeInput,
+  phoneNumberValidation,
+  authController.register
+);
+
 router.post(
   '/refresh-token',
   sanitizeInput,
