@@ -483,6 +483,11 @@ router.post('/upload', uploadMiddleware, async (req, res) => {
 // Direct upload routes
 router.post('/direct-upload', uploadMiddleware, async (req, res) => {
   try {
+    // Add CORS headers for upload
+    res.header('Access-Control-Allow-Origin', '*');
+    res.header('Access-Control-Allow-Headers', 'Origin, X-Requested-With, Content-Type, Accept, Authorization');
+    res.header('Access-Control-Allow-Methods', 'POST, OPTIONS');
+    
     // Get parameters from request
     const { 
       userName, 
@@ -494,6 +499,12 @@ router.post('/direct-upload', uploadMiddleware, async (req, res) => {
       baseSypAmount,
       walletAddress,  // Add wallet address parameter
     } = req.body;
+    
+    console.log('DEBUG_UPLOAD: Direct upload request received', {
+      hasFile: !!req.file,
+      contentType: req.get('Content-Type'),
+      bodyFields: Object.keys(req.body)
+    });
     
     console.log('DEBUG_WALLET: Direct upload request with walletAddress:', walletAddress);
     
@@ -514,8 +525,9 @@ router.post('/direct-upload', uploadMiddleware, async (req, res) => {
     // Validate file
     const file = req.file;
     if (!file) {
-    return res.status(400).json({
-      success: false,
+      console.error('DEBUG_UPLOAD: No file received in direct upload request');
+      return res.status(400).json({
+        success: false,
         message: 'No file uploaded'
       });
     }
@@ -558,10 +570,10 @@ router.post('/direct-upload', uploadMiddleware, async (req, res) => {
       logDirectUpload('Storage upload failed for standalone receipt', { 
         error: storageError.message,
         stack: storageError.stack 
-  });
-  
-  return res.status(200).json({
-    success: true,
+      });
+      
+      return res.status(200).json({
+        success: true,
         message: 'File uploaded but failed to process for storage',
         error: storageError.message,
         file: {
@@ -712,7 +724,7 @@ router.post('/direct-upload', uploadMiddleware, async (req, res) => {
         success: true,
         message: 'File uploaded but failed to create transaction',
         error: transactionError.message,
-    file: {
+        file: {
           filename: file.filename,
           path: file.path
         }
@@ -730,6 +742,26 @@ router.post('/direct-upload', uploadMiddleware, async (req, res) => {
       error: error.message
     });
   }
+});
+
+// Add OPTIONS handler for CORS preflight requests
+router.options('/direct-upload', (req, res) => {
+  // Set CORS headers
+  res.header('Access-Control-Allow-Origin', '*');
+  res.header('Access-Control-Allow-Headers', 'Origin, X-Requested-With, Content-Type, Accept, Authorization');
+  res.header('Access-Control-Allow-Methods', 'POST, OPTIONS');
+  res.header('Access-Control-Max-Age', '86400'); // 24 hours
+  res.status(200).end();
+});
+
+// Add OPTIONS handler for upload route as well
+router.options('/upload', (req, res) => {
+  // Set CORS headers
+  res.header('Access-Control-Allow-Origin', '*');
+  res.header('Access-Control-Allow-Headers', 'Origin, X-Requested-With, Content-Type, Accept, Authorization');
+  res.header('Access-Control-Allow-Methods', 'POST, OPTIONS');
+  res.header('Access-Control-Max-Age', '86400'); // 24 hours
+  res.status(200).end();
 });
 
 // Transaction endpoint for mobile app
@@ -1187,7 +1219,7 @@ router.get('/connectivity-test', (req, res) => {
 });
 
 // SSE endpoint for transaction status updates
-router.get('/api/transactions/status-updates', authMiddleware, (req, res) => {
+router.get('/transactions/status-updates', authMiddleware, (req, res) => {
   const userId = req.user._id;
   
   console.log(`[SSE] New client connected for user ${userId}`);
@@ -1642,6 +1674,29 @@ router.get('/settings', async (req, res) => {
       error: error.message
     });
   }
+});
+
+// Add a catch-all handler for undefined routes with better error messages
+router.use('*', (req, res) => {
+  console.log(`⚠️ WARNING: Undefined route accessed: ${req.originalUrl}`);
+  
+  // Send more descriptive error for transaction status-updates when accessed incorrectly
+  if (req.originalUrl.includes('status-updates')) {
+    console.log('ℹ️ INFO: Detected access to transaction status updates route');
+    return res.status(404).json({
+      success: false,
+      message: 'Transaction status updates endpoint is available at /transactions/status-updates',
+      path: req.originalUrl,
+      hint: 'Remove any duplicate /api prefix from your URL path'
+    });
+  }
+  
+  // For other routes, send a simple response
+  return res.status(404).json({
+    success: false,
+    message: 'Route not found',
+    path: req.originalUrl
+  });
 });
 
 console.log('✅ DEBUG: Main routes module loaded successfully');
