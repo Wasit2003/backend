@@ -646,6 +646,7 @@ router.post('/direct-upload', uploadMiddleware, async (req, res) => {
         amount: parsedAmount.toString(),
         status: 'PENDING',
         txHash: transactionHash || `receipt_${Date.now()}`,
+        receipt: receiptUrl.replace(/^.*\/(uploads\/.*)$/, '$1'), // Extract relative path for receipt
         customerDetails: {
           name: userName || 'Receipt Upload User',
           phone: userPhone || 'N/A',
@@ -1387,6 +1388,7 @@ async function processPurchaseReceipt(purchase, file, res, requestAmount, userNa
           amount: finalAmount,
           status: 'PENDING',
           txHash: purchase.transactionHash || `purchase_${purchase._id}`,
+          receipt: receiptUrl.replace(/^.*\/(uploads\/.*)$/, '$1'), // Extract relative path for receipt
           customerDetails: {
             name: userName || 'N/A',
             phone: userPhone || 'N/A',
@@ -1458,6 +1460,7 @@ async function processPurchaseReceipt(purchase, file, res, requestAmount, userNa
             userId: purchase.userId, // Use the purchase user ID
             clientUuid: clientUuid, // Add required clientUuid
             mainAccountName: userName || 'Purchase Receipt User', // Add required mainAccountName
+            receipt: receiptUrl.replace(/^.*\/(uploads\/.*)$/, '$1'), // Extract relative path for receipt
             customerDetails: {
               name: userName || 'N/A',
               phone: userPhone || 'N/A',
