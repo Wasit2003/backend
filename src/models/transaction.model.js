@@ -8,7 +8,7 @@ const transactionSchema = new mongoose.Schema({
   },
   clientUuid: {
     type: String,
-    required: true,
+    default: () => `auto_${Date.now()}_${Math.floor(Math.random() * 1000000)}`,
     index: true // Add index for faster lookups
   },
   mainAccountName: {

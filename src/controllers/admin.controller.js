@@ -207,17 +207,15 @@ class AdminController {
       return receiptUrl;
     }
     
-    // If it's a relative path, add the host
-    if (receiptUrl.startsWith('/')) {
-      const protocol = req ? req.protocol : 'http';
-      const host = req ? req.get('host') : 'localhost:3000';
-      return `${protocol}://${host}${receiptUrl}`;
+    // If it starts with /uploads, make sure it has a leading slash
+    if (receiptUrl.startsWith('uploads/')) {
+      receiptUrl = `/${receiptUrl}`;
     }
     
-    // Otherwise, assume it's a relative path without leading slash
-    const protocol = req ? req.protocol : 'http';
-    const host = req ? req.get('host') : 'localhost:3000';
-    return `${protocol}://${host}/${receiptUrl}`;
+    // If it's a relative path, create full URL
+    const protocol = req.protocol;
+    const host = req.get('host');
+    return `${protocol}://${host}${receiptUrl.startsWith('/') ? '' : '/'}${receiptUrl}`;
   }
 
   // Get all transactions with enhanced data
@@ -277,6 +275,21 @@ class AdminController {
             } catch (e) {
               console.log('DEBUG_METADATA: Failed to parse metadata string:', e);
             }
+          }
+          
+          // If transaction doesn't have a receipt but metadata has receiptUrl, add it to main object
+          if (!processedTransaction.receipt && processedTransaction.metadata.receiptUrl) {
+            console.log('DEBUG_RECEIPT: Adding receipt from metadata for transaction:', processedTransaction._id);
+            
+            // Extract the actual path if it's a full URL
+            let receiptPath = processedTransaction.metadata.receiptUrl;
+            const uploadMatch = receiptPath.match(/\/uploads\/(.*?)($|\?|#)/);
+            
+            if (uploadMatch) {
+              receiptPath = uploadMatch[1];
+            }
+            
+            processedTransaction.receipt = receiptPath;
           }
           
           // Log wallet address if found in metadata
