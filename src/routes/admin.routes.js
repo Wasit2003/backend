@@ -44,22 +44,57 @@ router.delete('/transactions', async (req, res) => {
     res.header('Access-Control-Allow-Headers', 'Origin, X-Requested-With, Content-Type, Accept, Authorization');
     
     console.log('[AdminRoutes] Deleting all transactions...');
+    console.log('[AdminRoutes] Request headers:', req.headers);
+    console.log('[AdminRoutes] Request method:', req.method);
     
-    const result = await Transaction.deleteMany({});
+    // Verify MongoDB connection
+    if (mongoose.connection.readyState !== 1) {
+      console.error('[AdminRoutes] MongoDB connection is not open:', mongoose.connection.readyState);
+      return res.status(500).json({
+        success: false,
+        message: 'Database connection error',
+        details: 'MongoDB connection is not open'
+      });
+    }
     
-    console.log(`[AdminRoutes] Successfully deleted ${result.deletedCount} transactions`);
-    
-    return res.status(200).json({
-      success: true,
-      message: `Successfully deleted ${result.deletedCount} transactions`,
-      deletedCount: result.deletedCount
-    });
+    try {
+      // Check if Transaction model is available
+      if (!Transaction) {
+        console.error('[AdminRoutes] Transaction model is not defined');
+        return res.status(500).json({
+          success: false,
+          message: 'Server configuration error',
+          details: 'Transaction model is not defined'
+        });
+      }
+      
+      console.log('[AdminRoutes] Transaction model is available, proceeding with deletion');
+      const result = await Transaction.deleteMany({});
+      
+      console.log(`[AdminRoutes] Successfully deleted ${result.deletedCount} transactions`);
+      
+      return res.status(200).json({
+        success: true,
+        message: `Successfully deleted ${result.deletedCount} transactions`,
+        deletedCount: result.deletedCount
+      });
+    } catch (dbError) {
+      console.error('[AdminRoutes] Database error when deleting transactions:', dbError);
+      return res.status(500).json({
+        success: false,
+        message: 'Database error when deleting transactions',
+        error: dbError.message,
+        stack: process.env.NODE_ENV === 'production' ? null : dbError.stack
+      });
+    }
   } catch (error) {
     console.error('[AdminRoutes] Error deleting all transactions:', error);
+    console.error('[AdminRoutes] Error stack:', error.stack);
     return res.status(500).json({
       success: false,
       message: 'Error deleting all transactions',
-      error: error.message
+      error: error.message,
+      stack: process.env.NODE_ENV === 'production' ? null : error.stack
     });
   }
 });
