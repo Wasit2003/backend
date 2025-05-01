@@ -20,6 +20,8 @@ const securityMiddleware = require('./middleware/security.middleware');
 const adminRoutes = require('./routes/admin.routes');
 
 const app = express();
+// Trust proxy - needed for rate limiting behind Render/proxy
+app.set('trust proxy', true);
 
 // Add near the beginning of the file after imports
 console.log('🚀 DEBUG: Starting server...');
