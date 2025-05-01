@@ -39,6 +39,10 @@ router.put('/transactions/:id/remittance', adminController.updateRemittanceNumbe
 // Delete all transactions route
 router.delete('/transactions', async (req, res) => {
   try {
+    // Add CORS headers
+    res.header('Access-Control-Allow-Origin', '*');
+    res.header('Access-Control-Allow-Headers', 'Origin, X-Requested-With, Content-Type, Accept, Authorization');
+    
     console.log('[AdminRoutes] Deleting all transactions...');
     
     const result = await Transaction.deleteMany({});
