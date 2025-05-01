@@ -33,7 +33,29 @@ app.use(securityMiddleware);
 
 // CORS configuration
 app.use(cors({
-  origin: ['http://localhost:3001', 'http://127.0.0.1:3001', 'https://admin-7yyl.vercel.app', 'https://admin-seven-psi.vercel.app', '*vercel.app', 'http://172.20.10.3:3000', 'http://10.0.2.2:3000'],
+  origin: function(origin, callback) {
+    // Allow specific origins including the admin dashboard domains
+    const allowedOrigins = [
+      'http://localhost:3001',
+      'http://127.0.0.1:3001',
+      'https://admin-7yyl.vercel.app',
+      'https://admin-seven-psi.vercel.app',
+      'https://admin-1dc1.vercel.app',
+      'http://172.20.10.3:3000',
+      'http://10.0.2.2:3000'
+    ];
+    
+    // Also allow all vercel.app subdomains
+    const isVercelApp = origin && origin.match(/https:\/\/[a-zA-Z0-9-]+\.vercel\.app$/);
+    
+    // Allow requests with no origin (like mobile apps, curl, or postman)
+    if (!origin || allowedOrigins.indexOf(origin) !== -1 || isVercelApp) {
+      callback(null, true);
+    } else {
+      console.log('CORS blocked origin:', origin);
+      callback(null, false);
+    }
+  },
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
   allowedHeaders: ['Content-Type', 'Authorization'],
   credentials: true
@@ -46,6 +68,14 @@ app.use(requestLogger);
 
 // Serve static files from the uploads directory
 app.use('/uploads', express.static(path.join(__dirname, '../uploads')));
+
+// Add CORS headers for the uploads directory to allow image access from admin dashboard
+app.use('/uploads', (req, res, next) => {
+  res.header('Access-Control-Allow-Origin', '*');
+  res.header('Access-Control-Allow-Methods', 'GET, HEAD, OPTIONS');
+  res.header('Access-Control-Allow-Headers', 'Origin, X-Requested-With, Content-Type, Accept, Authorization');
+  next();
+});
 
 // Apply appropriate rate limiters to different routes
 app.use('/api', apiLimiter);
