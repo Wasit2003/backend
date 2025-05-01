@@ -21,7 +21,9 @@ const adminRoutes = require('./routes/admin.routes');
 
 const app = express();
 // Trust proxy - needed for rate limiting behind Render/proxy
-app.set('trust proxy', true);
+// Use a more specific trust proxy configuration for production rate limiting
+// This tells Express to trust the first proxy in front of the app (Render's reverse proxy)
+app.set('trust proxy', 1);
 
 // Add near the beginning of the file after imports
 console.log('🚀 DEBUG: Starting server...');
